@@ -1,16 +1,24 @@
 import Link from "next/link";
+import Image from "next/image";
 import LoginForm from "./form";
-import { Shield, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   return (
     <main className="min-h-screen bg-[#FAF7F2] text-[#2C221E] flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-md rounded-3xl bg-white border border-[#E6DFD5] p-8 sm:p-10 shadow-lg space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-[#5A3E2B] text-white flex items-center justify-center mx-auto shadow-xs">
-            <Shield className="w-6 h-6 text-[#D4A373]" />
+          <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-[#E6DFD5] bg-[#FAF7F2] mx-auto shadow-xs">
+            <Image
+              src="/images/logo.jpg"
+              alt="Sai Furniture Logo"
+              fill
+              sizes="64px"
+              className="object-contain p-1"
+              priority
+            />
           </div>
-          <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 pt-2">
+          <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 pt-1">
             Sai Furniture · Showroom Portal
           </p>
           <h1 className="text-2xl font-serif font-bold text-[#2C221E]">

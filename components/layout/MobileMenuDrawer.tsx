@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { X, ChevronRight, Phone, MapPin, Mail, Sofa, Bed, Utensils, Armchair, Archive, Tv } from "lucide-react";
 import { CATEGORIES } from "@/data/products";
@@ -34,13 +35,24 @@ export default function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerPr
       <div className="relative w-4/5 max-w-sm bg-[#FAF7F2] h-full shadow-2xl flex flex-col z-10 overflow-y-auto">
         {/* Top Header */}
         <div className="p-4 border-b border-[#E6DFD5] flex items-center justify-between bg-[#F3EEE6]">
-          <div>
-            <span className="font-serif text-xl font-bold text-[#2C221E] tracking-wide block">
-              Sai Furniture
-            </span>
-            <span className="text-[10px] text-stone-500 uppercase tracking-widest block font-medium">
-              Furniture for a Better Everyday
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="relative w-11 h-11 shrink-0 rounded-xl overflow-hidden border border-[#E6DFD5] bg-[#FAF7F2]">
+              <Image
+                src="/images/logo.jpg"
+                alt="Sai Furniture Logo"
+                fill
+                sizes="44px"
+                className="object-contain p-0.5"
+              />
+            </div>
+            <div>
+              <span className="font-serif text-lg font-bold text-[#2C221E] tracking-tight block leading-tight">
+                Sai Furniture
+              </span>
+              <span className="text-[10px] text-stone-500 uppercase tracking-widest block font-medium">
+                Better Homes • Happier Lives
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -125,10 +137,15 @@ export default function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerPr
             <Mail className="w-3.5 h-3.5 text-[#5A3E2B]" />
             <span>support@saifurniture.com</span>
           </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5 text-[#5A3E2B]" />
-            <span>Nashik, Maharashtra, India</span>
-          </div>
+          <a
+            href="https://www.google.com/maps/search/?api=1&query=Sai+Furniture%2C+Furniture+Market%2C+60+Feet+Road%2C+Ganjmal+Shalimaar+Nashik"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-2 hover:text-[#5A3E2B] transition-colors pt-1"
+          >
+            <MapPin className="w-3.5 h-3.5 text-[#5A3E2B] shrink-0 mt-0.5" />
+            <span className="leading-tight">Sai Furniture, Furniture Market, 60 Feet Road, Ganjmal Shalimaar Nashik</span>
+          </a>
         </div>
       </div>
     </div>

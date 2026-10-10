@@ -126,7 +126,7 @@ export default function QuotationForm({
         <div className="flex justify-between items-start border-b border-black pb-4">
           <div>
             <h1 className="text-2xl font-bold font-serif">Sai Furniture</h1>
-            <p className="text-xs text-gray-600">College Road, Nashik, Maharashtra 422005</p>
+            <p className="text-xs text-gray-600">Sai Furniture, Furniture Market, 60 Feet Road, Ganjmal Shalimaar Nashik</p>
             <p className="text-xs text-gray-600">Phone: +91 98765 43210 | Email: sales@saifurniture.com</p>
           </div>
           <div className="text-right">

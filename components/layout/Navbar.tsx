@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, Menu, X, Sparkles, SlidersHorizontal, User } from "lucide-react";
+import { Search, Menu, X, Sparkles, SlidersHorizontal } from "lucide-react";
 import MobileMenuDrawer from "./MobileMenuDrawer";
 
 export default function Navbar() {
@@ -47,16 +48,23 @@ export default function Navbar() {
 
             {/* Brand Logo & Title */}
             <div className="flex items-center gap-3">
-              <Link href="/" className="group flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-[#5A3E2B] flex items-center justify-center text-white shadow-sm group-hover:bg-[#432D1F] transition-colors">
-                  <span className="font-serif text-xl font-bold italic">S</span>
+              <Link href="/" className="group flex items-center gap-2.5 sm:gap-3">
+                <div className="relative w-11 h-11 sm:w-13 sm:h-13 shrink-0 rounded-xl overflow-hidden border border-[#E6DFD5] bg-[#FAF7F2] shadow-xs group-hover:border-[#5A3E2B] transition-colors">
+                  <Image
+                    src="/images/logo.jpg"
+                    alt="Sai Furniture Logo"
+                    fill
+                    sizes="(max-width: 640px) 44px, 52px"
+                    className="object-contain p-0.5"
+                    priority
+                  />
                 </div>
                 <div>
                   <span className="font-serif text-2xl font-bold text-[#2C221E] tracking-tight block leading-none">
                     Sai Furniture
                   </span>
                   <span className="text-[10px] text-stone-500 uppercase tracking-widest hidden sm:block mt-1 font-medium">
-                    Handcrafted Showroom Experience
+                    Better Homes • Happier Lives
                   </span>
                 </div>
               </Link>
@@ -108,7 +116,7 @@ export default function Navbar() {
               </Link>
             </nav>
 
-            {/* Desktop Search & Portal Action */}
+            {/* Desktop Search & Action */}
             <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="relative hidden lg:block">
                 <form onSubmit={handleSearchSubmit} className="relative">
@@ -137,14 +145,6 @@ export default function Navbar() {
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
                 <span>Browse Furniture</span>
-              </Link>
-
-              <Link
-                href="/admin/login"
-                className="p-2 text-stone-600 hover:text-[#5A3E2B] hover:bg-[#F3EEE6] rounded-xl transition-colors hidden sm:block"
-                title="Admin Portal"
-              >
-                <User className="w-5 h-5" />
               </Link>
             </div>
           </div>

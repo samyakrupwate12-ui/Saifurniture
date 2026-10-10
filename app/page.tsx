@@ -1,6 +1,23 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Sparkles, ShieldCheck, Truck, SlidersHorizontal, MessageSquareText, Sofa, Bed, Utensils, Armchair, Archive, Tv } from "lucide-react";
+import {
+  ArrowRight,
+  Sparkles,
+  ShieldCheck,
+  Truck,
+  SlidersHorizontal,
+  MessageSquareText,
+  MapPin,
+  ExternalLink,
+  Phone,
+  Mail,
+  Sofa,
+  Bed,
+  Utensils,
+  Armchair,
+  Archive,
+  Tv,
+} from "lucide-react";
 import { fetchPublicCatalogue, fetchPublicCategories } from "@/lib/db";
 import ProductCard from "@/components/product/ProductCard";
 
@@ -16,7 +33,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default async function HomePage() {
-  const [{ products, total }, categories] = await Promise.all([
+  const [{ products }, categories] = await Promise.all([
     fetchPublicCatalogue({ pageSize: 6 }),
     fetchPublicCategories(),
   ]);
@@ -194,7 +211,7 @@ export default async function HomePage() {
               </div>
               <h3 className="text-lg font-serif font-bold text-[#2C221E]">Catalogue Updated Regularly</h3>
               <p className="text-sm text-stone-600 mt-2">
-                Our active database currently has no published products to display publicly. Visit our admin portal to add products or check back soon.
+                Our active handcrafted catalogue is updated regularly. Please check back soon or submit a custom furniture enquiry.
               </p>
               <div className="mt-6 flex items-center justify-center gap-3">
                 <Link
@@ -206,6 +223,82 @@ export default async function HomePage() {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Showroom Visit & Location Section */}
+      <section className="py-16 md:py-24 bg-white border-y border-[#E6DFD5]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-6 space-y-6">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F3EEE6] border border-[#E6DFD5] text-xs font-semibold text-[#5A3E2B]">
+                <MapPin className="w-3.5 h-3.5 text-[#5A3E2B]" />
+                <span>Visit Our Showroom</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold text-[#2C221E] tracking-tight">
+                Experience Solid Wood Craftsmanship in Person
+              </h2>
+              <p className="text-sm sm:text-base text-stone-600 leading-relaxed">
+                Step into our showroom to explore the natural textures of solid teak wood, inspect hand-tailored finishes, and consult with our craftsmen on bespoke designs for your home.
+              </p>
+
+              <div className="space-y-4 pt-2">
+                <div className="p-5 rounded-2xl bg-[#FAF7F2] border border-[#E6DFD5] space-y-3">
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-[#5A3E2B] shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="font-semibold text-sm text-[#2C221E]">Store Address</h3>
+                      <p className="text-xs sm:text-sm text-stone-700 font-medium mt-1">
+                        Sai Furniture, Furniture Market, 60 Feet Road, Ganjmal Shalimaar Nashik
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex flex-wrap gap-4 text-xs text-stone-600 border-t border-[#E6DFD5]">
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-[#5A3E2B]" />
+                      <span>+91 98765 43210</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-[#5A3E2B]" />
+                      <span>support@saifurniture.com</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=Sai+Furniture%2C+Furniture+Market%2C+60+Feet+Road%2C+Ganjmal+Shalimaar+Nashik"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#5A3E2B] text-white font-semibold text-xs sm:text-sm hover:bg-[#432D1F] transition-all shadow-xs"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    <span>Get Directions on Google Maps</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-[#D4A373]" />
+                  </a>
+                  <Link
+                    href="/custom-furniture"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#FAF7F2] border border-[#E6DFD5] text-[#2C221E] font-semibold text-xs sm:text-sm hover:bg-[#F3EEE6] transition-colors"
+                  >
+                    <span>Request Custom Design</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6">
+              <div className="rounded-3xl overflow-hidden border border-[#E6DFD5] shadow-lg bg-stone-100 aspect-4/3 relative">
+                <iframe
+                  title="Sai Furniture Showroom Location"
+                  src="https://maps.google.com/maps?q=Sai+Furniture%2C+Furniture+Market%2C+60+Feet+Road%2C+Ganjmal+Shalimaar+Nashik&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

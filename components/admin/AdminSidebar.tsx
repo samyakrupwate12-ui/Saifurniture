@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -53,9 +54,14 @@ export default function AdminSidebar({ adminName, adminRole = "admin" }: AdminSi
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="font-serif text-lg font-bold text-white leading-none">Sai Furniture</h1>
-            <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">Admin Portal</span>
+          <div className="flex items-center gap-2.5">
+            <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-stone-700 bg-[#FAF7F2] shrink-0">
+              <Image src="/images/logo.jpg" alt="Sai Furniture" fill sizes="32px" className="object-contain p-0.5" />
+            </div>
+            <div>
+              <h1 className="font-serif text-lg font-bold text-white leading-none">Sai Furniture</h1>
+              <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">Admin Portal</span>
+            </div>
           </div>
         </div>
         <Link
@@ -137,10 +143,18 @@ export default function AdminSidebar({ adminName, adminRole = "admin" }: AdminSi
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:w-64 bg-stone-900 text-stone-100 flex-col p-6 min-h-screen border-r border-stone-800 shrink-0 sticky top-0 h-screen">
         <div className="pb-6 border-b border-stone-800">
-          <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-400">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-stone-700 bg-[#FAF7F2] shrink-0">
+              <Image src="/images/logo.jpg" alt="Sai Furniture" fill sizes="40px" className="object-contain p-0.5" priority />
+            </div>
+            <div>
+              <h1 className="text-xl font-serif font-bold text-white leading-tight">Sai Furniture</h1>
+              <p className="text-[10px] text-[#D4A373] tracking-wide font-medium">Better Homes • Happier Lives</p>
+            </div>
+          </div>
+          <p className="text-[10px] uppercase tracking-widest font-semibold text-stone-500 pt-1">
             Showroom Management
           </p>
-          <h1 className="text-2xl font-serif font-bold text-white mt-1">Sai Furniture</h1>
         </div>
 
         <nav className="mt-6 space-y-1.5 flex-1">
