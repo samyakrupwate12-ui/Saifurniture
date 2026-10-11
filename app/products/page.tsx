@@ -96,7 +96,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
                 className="w-full px-3 py-2 text-xs rounded-xl bg-[#FAF7F2] border border-[#E6DFD5] text-[#2C221E] focus:outline-none focus:ring-2 focus:ring-[#5A3E2B]/30"
               >
                 <option value="">All Availability</option>
-                <option value="in_stock">In Stock</option>
+                <option value="available">In Stock</option>
                 <option value="made_to_order">Made to Order</option>
                 <option value="out_of_stock">Out of Stock</option>
               </select>

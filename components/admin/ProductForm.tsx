@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useActionState, useState } from "react";
+import React, { useActionState, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { saveProductAction } from "@/app/admin/admin-actions";
-import { Plus, Trash2, ArrowLeft, Loader2, AlertCircle, Sparkles } from "lucide-react";
-import type { DBProduct, DBCategory } from "@/types/supabase";
+import { Plus, Trash2, Upload, Loader2, AlertCircle } from "lucide-react";
+import type { DBProduct, DBCategory, StockStatus } from "@/types/supabase";
+
+import { createClient } from "@/lib/supabase/browser";
+import { supabaseConfig } from "@/lib/supabase/config";
+import { IMAGE_BUCKET, IMAGE_TYPES, MAX_PRODUCT_IMAGES, parseProductImage, validateImageFile } from "@/lib/product-images";
 
 interface ProductFormProps {
   product?: DBProduct | null;
@@ -24,27 +28,81 @@ export default function ProductForm({ product, categories }: ProductFormProps) {
   const [material, setMaterial] = useState(product?.material || "");
   const [dimensions, setDimensions] = useState(product?.dimensions || "");
   const [colour, setColour] = useState(product?.colour || "");
-  const [stockStatus, setStockStatus] = useState(product?.stock_status || "in_stock");
+  const [stockStatus, setStockStatus] = useState(product?.stock_status || "available");
   const [isFeatured, setIsFeatured] = useState(product?.is_featured || false);
   const [isPublished, setIsPublished] = useState(product ? product.is_published : true);
   const [isArchived, setIsArchived] = useState(product?.is_archived || false);
 
-  const initialImages = product?.product_images && product.product_images.length > 0
-    ? product.product_images.map((img) => img.image_url)
-    : ["https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80"];
-
-  const [imageUrls, setImageUrls] = useState<string[]>(initialImages);
+  const [imageUrls, setImageUrls] = useState<string[]>(() =>
+    [...(product?.product_images ?? [])]
+      .sort((a, b) => a.display_order - b.display_order)
+      .map((img) => img.image_url),
+  );
   const [newImageUrl, setNewImageUrl] = useState("");
+  const [imageError, setImageError] = useState("");
+  const [uploadStatus, setUploadStatus] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const uploadLock = useRef(false);
+  const busy = pending || uploading;
+  const savedId = product?.id || state.productId;
 
   const handleAddImage = () => {
-    if (newImageUrl.trim()) {
-      setImageUrls([...imageUrls, newImageUrl.trim()]);
+    if (!newImageUrl.trim() || busy) return;
+    try {
+      if (imageUrls.length >= MAX_PRODUCT_IMAGES) throw new Error(`Use up to ${MAX_PRODUCT_IMAGES} images per product.`);
+      const image = parseProductImage(newImageUrl, supabaseConfig().url);
+      if (imageUrls.includes(image.image_url)) throw new Error("This image has already been added.");
+      setImageUrls((urls) => [...urls, image.image_url]);
       setNewImageUrl("");
+      setImageError("");
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : "Invalid image link.");
+    }
+  };
+
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!files.length || uploadLock.current || pending) return;
+    setImageError("");
+    setUploadStatus("");
+    if (files.length + imageUrls.length > MAX_PRODUCT_IMAGES) {
+      setImageError(`Use up to ${MAX_PRODUCT_IMAGES} images per product.`);
+      return;
+    }
+    for (const file of files) {
+      const error = validateImageFile(file);
+      if (error) { setImageError(`${file.name}: ${error}`); return; }
+    }
+    uploadLock.current = true;
+    setUploading(true);
+    let uploaded = 0;
+    try {
+      const supabase = createClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) throw new Error("Your session has expired. Sign in again to upload photos.");
+      for (const file of files) {
+        setUploadStatus(`Uploading photo ${uploaded + 1} of ${files.length}…`);
+        const path = `products/${user.id}/${crypto.randomUUID()}.${IMAGE_TYPES[file.type]}`;
+        const { error } = await supabase.storage.from(IMAGE_BUCKET).upload(path, file, {
+          contentType: file.type, cacheControl: "3600", upsert: false,
+        });
+        if (error) throw new Error(`${file.name}: ${error.message}`);
+        const { data } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path);
+        setImageUrls((urls) => [...urls, data.publicUrl]);
+        uploaded++;
+      }
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : "Upload failed. Please try again.");
+    } finally {
+      setUploadStatus(uploaded ? `${uploaded} photo${uploaded === 1 ? "" : "s"} uploaded. Save the product to apply changes.` : "");
+      uploadLock.current = false;
+      setUploading(false);
     }
   };
 
   const handleRemoveImage = (index: number) => {
-    setImageUrls(imageUrls.filter((_, i) => i !== index));
+    if (!busy) setImageUrls((urls) => urls.filter((_, i) => i !== index));
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,8 +114,8 @@ export default function ProductForm({ product, categories }: ProductFormProps) {
   };
 
   return (
-    <form action={action} className="space-y-8">
-      {product?.id && <input type="hidden" name="id" value={product.id} />}
+    <form action={action} onSubmit={(event) => { if (uploadLock.current) event.preventDefault(); }} className="space-y-8">
+      {savedId && <input type="hidden" name="id" value={savedId} />}
 
       {state?.error && (
         <div
@@ -118,13 +176,17 @@ export default function ProductForm({ product, categories }: ProductFormProps) {
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full px-3.5 py-2 text-xs rounded-xl bg-stone-50 border border-stone-300 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#5A3E2B]/40"
             >
-              <option value="">Select Category...</option>
+              <option value="">{categories.length ? "Select Category..." : "No categories yet"}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
+            <Link href="/admin/categories" target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-xs text-[#5A3E2B] underline">
+              Add or manage furniture categories
+            </Link>
+            {categories.length === 0 && <p className="mt-1 text-xs text-stone-500">Create a category, then refresh this page before entering product details.</p>}
           </div>
 
           <div>
@@ -134,10 +196,10 @@ export default function ProductForm({ product, categories }: ProductFormProps) {
             <select
               name="stock_status"
               value={stockStatus}
-              onChange={(e) => setStockStatus(e.target.value as any)}
+              onChange={(e) => setStockStatus(e.target.value as StockStatus)}
               className="w-full px-3.5 py-2 text-xs rounded-xl bg-stone-50 border border-stone-300 text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#5A3E2B]/40"
             >
-              <option value="in_stock">In Stock</option>
+              <option value="available">In Stock</option>
               <option value="made_to_order">Made to Order</option>
               <option value="out_of_stock">Out of Stock</option>
             </select>
@@ -254,10 +316,30 @@ export default function ProductForm({ product, categories }: ProductFormProps) {
           <input key={i} type="hidden" name="image_urls[]" value={url} />
         ))}
 
-        {/* Image Input Add Bar */}
+        <div className="rounded-xl border-2 border-dashed border-stone-300 p-5 space-y-3">
+          <label htmlFor="product-photos" className="flex items-center gap-2 text-sm font-semibold text-stone-800">
+            <Upload className="w-4 h-4" /> Upload photos from your device
+          </label>
+          <input
+            id="product-photos"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            multiple
+            disabled={busy || imageUrls.length >= MAX_PRODUCT_IMAGES}
+            onChange={handleUpload}
+            className="block w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-stone-900 file:px-4 file:py-2 file:text-white disabled:opacity-50"
+          />
+          <p className="text-xs text-stone-500">JPG, PNG, WebP or AVIF. Up to 5 MB each, {MAX_PRODUCT_IMAGES} photos per product. The first photo is the cover.</p>
+          {uploadStatus && <p role="status" className="text-xs text-stone-700">{uploadStatus}</p>}
+          {imageError && <p role="alert" className="text-xs text-red-700">{imageError}</p>}
+        </div>
+
+        {/* Existing hosted links remain supported. */}
         <div className="flex gap-2">
           <input
             type="url"
+            aria-label="Hosted image URL"
+            disabled={busy}
             value={newImageUrl}
             onChange={(e) => setNewImageUrl(e.target.value)}
             placeholder="Paste image URL (e.g. https://images.unsplash.com/...)"
@@ -266,6 +348,7 @@ export default function ProductForm({ product, categories }: ProductFormProps) {
           <button
             type="button"
             onClick={handleAddImage}
+            disabled={busy || !newImageUrl.trim()}
             className="px-4 py-2 bg-stone-900 text-white text-xs font-semibold rounded-xl hover:bg-stone-800 flex items-center gap-1.5 shrink-0"
           >
             <Plus className="w-4 h-4" /> Add Image
@@ -276,11 +359,13 @@ export default function ProductForm({ product, categories }: ProductFormProps) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
           {imageUrls.map((url, index) => (
             <div key={index} className="relative aspect-4/3 rounded-xl overflow-hidden border border-stone-200 group bg-stone-100">
-              <Image src={url} alt={`Preview ${index + 1}`} fill sizes="200px" className="object-cover" />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <Image src={url} alt={`Preview ${index + 1}`} fill sizes="200px" className="object-cover" unoptimized />
+              <div className="absolute inset-0 bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(index)}
+                  disabled={busy}
+                  aria-label={`Remove photo ${index + 1}`}
                   className="p-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors"
                   title="Remove Image"
                 >
@@ -356,13 +441,13 @@ export default function ProductForm({ product, categories }: ProductFormProps) {
         </Link>
         <button
           type="submit"
-          disabled={pending}
+          disabled={busy}
           className="px-6 py-2.5 bg-[#5A3E2B] text-white text-xs font-semibold rounded-xl hover:bg-[#432D1F] transition-all shadow-2xs flex items-center gap-2 disabled:opacity-50"
         >
-          {pending ? (
+          {busy ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Saving Product...</span>
+              <span>{uploading ? "Uploading Photos..." : "Saving Product..."}</span>
             </>
           ) : (
             <span>Save & Apply Product Changes</span>

@@ -3,13 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
-import type { StockStatus, EnquiryStatus, QuotationStatus } from "@/types/supabase";
+import type { EnquiryStatus, QuotationStatus } from "@/types/supabase";
+
+import { MAX_PRODUCT_IMAGES, parseProductImage } from "@/lib/product-images";
+import { supabaseConfig } from "@/lib/supabase/config";
 
 // ----------------------------------------------------
 // PRODUCT ACTIONS
 // ----------------------------------------------------
 
-export async function saveProductAction(_prevState: any, formData: FormData) {
+export async function saveProductAction(
+  _prevState: { error: string; productId?: string }, formData: FormData,
+): Promise<{ error: string; productId?: string }> {
   const { supabase } = await requireAdmin();
 
   const id = formData.get("id") ? String(formData.get("id")) : null;
@@ -23,7 +28,7 @@ export async function saveProductAction(_prevState: any, formData: FormData) {
   const material = formData.get("material") ? String(formData.get("material")).trim() : null;
   const dimensions = formData.get("dimensions") ? String(formData.get("dimensions")).trim() : null;
   const colour = formData.get("colour") ? String(formData.get("colour")).trim() : null;
-  const stock_status = (formData.get("stock_status") as StockStatus) || "in_stock";
+  const stock_status = String(formData.get("stock_status") || "available");
   const is_featured = formData.get("is_featured") === "true" || formData.get("is_featured") === "on";
   const is_published = formData.get("is_published") === "true" || formData.get("is_published") === "on";
   const is_archived = formData.get("is_archived") === "true" || formData.get("is_archived") === "on";
@@ -31,28 +36,42 @@ export async function saveProductAction(_prevState: any, formData: FormData) {
   const rawImages = formData.getAll("image_urls[]").map(String).filter((url) => url.trim().length > 0);
 
   if (!name || name.length < 2) {
-    return { error: "Product name must be at least 2 characters long." };
+    return { productId: id || undefined, error: "Product name must be at least 2 characters long." };
   }
 
   if (!slug) {
     slug = name.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
   }
 
-  if (isNaN(selling_price) || selling_price <= 0) {
-    return { error: "Selling price must be a positive number." };
+  if (!Number.isFinite(selling_price) || selling_price <= 0) {
+    return { productId: id || undefined, error: "Selling price must be a positive number." };
   }
 
   if (original_price && original_price < selling_price) {
-    return { error: "Original price cannot be lower than the selling price." };
+    return { productId: id || undefined, error: "Original price cannot be lower than the selling price." };
+  }
+
+  if (!["available", "made_to_order", "out_of_stock"].includes(stock_status)) {
+    return { productId: id || undefined, error: "Choose a valid stock status." };
+  }
+  if (rawImages.length > MAX_PRODUCT_IMAGES) {
+    return { productId: id || undefined, error: `Use up to ${MAX_PRODUCT_IMAGES} images per product.` };
+  }
+  let images: ReturnType<typeof parseProductImage>[];
+  try {
+    images = [...new Set(rawImages)].map((url) => parseProductImage(url, supabaseConfig().url));
+  } catch (error) {
+    return { productId: id || undefined, error: error instanceof Error ? error.message : "Invalid image link." };
   }
 
   // Check unique slug
   let slugCheck = supabase.from("products").select("id").eq("slug", slug);
   if (id) slugCheck = slugCheck.neq("id", id);
-  const { data: existingSlug } = await slugCheck.maybeSingle();
+  const { data: existingSlug, error: slugError } = await slugCheck.maybeSingle();
+  if (slugError) return { productId: id || undefined, error: "Unable to check product slug. Please try again." };
 
   if (existingSlug) {
-    return { error: `Product slug "${slug}" is already in use by another product.` };
+    return { productId: id || undefined, error: `Product slug "${slug}" is already in use by another product.` };
   }
 
   const productPayload = {
@@ -75,10 +94,10 @@ export async function saveProductAction(_prevState: any, formData: FormData) {
   let productId = id;
 
   if (id) {
-    const { error: updateErr } = await supabase.from("products").update(productPayload).eq("id", id);
-    if (updateErr) {
+    const { data: updated, error: updateErr } = await supabase.from("products").update(productPayload).eq("id", id).select("id").single();
+    if (updateErr || !updated) {
       console.error("Product update error:", updateErr);
-      return { error: `Failed to update product: ${updateErr.message}` };
+      return { productId: id || undefined, error: `Failed to update product: ${updateErr?.message || "Product not found"}` };
     }
   } else {
     const { data: newProd, error: insertErr } = await supabase
@@ -89,30 +108,31 @@ export async function saveProductAction(_prevState: any, formData: FormData) {
 
     if (insertErr || !newProd) {
       console.error("Product insert error:", insertErr);
-      return { error: `Failed to create product: ${insertErr?.message || "Unknown error"}` };
+      return { productId: id || undefined, error: `Failed to create product: ${insertErr?.message || "Unknown error"}` };
     }
     productId = newProd.id;
   }
 
-  // Sync Product Images
-  if (productId) {
-    // Remove old images
-    await supabase.from("product_images").delete().eq("product_id", productId);
-
-    // Insert new images
-    if (rawImages.length > 0) {
-      const imageRecords = rawImages.map((url, idx) => ({
-        product_id: productId!,
-        image_url: url.trim(),
-        alt_text: `${name} photo ${idx + 1}`,
-        display_order: idx,
-      }));
-      await supabase.from("product_images").insert(imageRecords);
-    }
+  // Replace image metadata in one transaction; a failure preserves the previous gallery.
+  const { error: imageError } = await supabase.rpc("replace_sai_product_images", {
+    p_product_id: productId,
+    p_images: images.map((image, idx) => ({
+      ...image,
+      alt_text: `${name} photo ${idx + 1}`,
+      display_order: idx,
+    })),
+  });
+  if (imageError) {
+    console.error("Product image save error:", imageError);
+    return {
+      error: "Product details were saved, but the photos could not be saved. Please retry Save; your previous gallery has been kept.",
+      productId: productId!,
+    };
   }
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/products/[slug]", "page");
   revalidatePath("/");
 
   redirect("/admin/products");

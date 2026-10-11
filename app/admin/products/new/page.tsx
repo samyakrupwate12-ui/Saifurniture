@@ -9,10 +9,12 @@ export const revalidate = 0;
 export default async function NewProductPage() {
   const { supabase } = await requireAdmin();
 
-  const { data: categoriesData } = await supabase
+  const { data: categoriesData, error: categoriesError } = await supabase
     .from("categories")
     .select("id, name, slug")
     .order("name");
+
+  if (categoriesError) throw new Error("Unable to load furniture categories. Please try again.");
 
   const categories: DBCategory[] = (categoriesData as DBCategory[]) || [];
 

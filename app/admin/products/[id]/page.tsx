@@ -15,7 +15,7 @@ export default async function EditProductPage({ params }: PageProps) {
   const { id } = await params;
   const { supabase } = await requireAdmin();
 
-  const [{ data: productData }, { data: categoriesData }] = await Promise.all([
+  const [{ data: productData, error: productError }, { data: categoriesData, error: categoriesError }] = await Promise.all([
     supabase
       .from("products")
       .select("*, category:categories(id, name), product_images(id, image_url, alt_text, display_order)")
@@ -23,6 +23,8 @@ export default async function EditProductPage({ params }: PageProps) {
       .maybeSingle(),
     supabase.from("categories").select("id, name, slug").order("name"),
   ]);
+
+  if (productError || categoriesError) throw new Error("Unable to load product or furniture categories. Please try again.");
 
   if (!productData) {
     notFound();

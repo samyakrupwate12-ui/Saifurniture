@@ -207,7 +207,7 @@ async function ProductsList({ searchParams }: PageProps) {
                       <td className="py-3 px-4">
                         <span
                           className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${
-                            p.stock_status === "in_stock"
+                            p.stock_status === "available"
                               ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                               : p.stock_status === "made_to_order"
                               ? "bg-amber-50 text-amber-800 border border-amber-200"
