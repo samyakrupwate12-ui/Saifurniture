@@ -13,7 +13,7 @@ export function toDBProduct(p: Product): DBProduct {
     material: p.material,
     dimensions: p.dimensions,
     colour: p.color,
-    stock_status: p.stock > 0 ? "in_stock" : "out_of_stock",
+    stock_status: p.stock > 0 ? "available" : "out_of_stock",
     is_featured: !!p.isFeatured,
     is_published: true,
     is_archived: false,

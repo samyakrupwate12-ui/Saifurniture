@@ -1,4 +1,4 @@
-export type StockStatus = "in_stock" | "out_of_stock" | "made_to_order";
+export type StockStatus = "available" | "out_of_stock" | "made_to_order";
 export type EnquiryStatus = "new" | "in_progress" | "quoted" | "closed";
 export type QuotationStatus = "draft" | "sent" | "accepted" | "rejected" | "expired";
 export type AdminRole = "owner" | "admin" | "manager";
