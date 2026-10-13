@@ -1,5 +1,5 @@
 export type StockStatus = "available" | "out_of_stock" | "made_to_order";
-export type EnquiryStatus = "new" | "in_progress" | "quoted" | "closed";
+export type EnquiryStatus = "new" | "contacted" | "quotation_sent" | "converted" | "closed";
 export type QuotationStatus = "draft" | "sent" | "accepted" | "rejected" | "expired";
 export type AdminRole = "owner" | "admin" | "manager";
 
@@ -56,8 +56,8 @@ export interface DBAdminUser {
 export interface DBEnquiry {
   id: string;
   customer_name: string;
-  customer_email: string | null;
-  customer_phone: string;
+  email: string | null;
+  phone: string;
   product_id: string | null;
   quantity: number;
   message: string | null;
@@ -72,11 +72,11 @@ export interface DBQuotationItem {
   id?: string;
   quotation_id?: string;
   product_id: string | null;
-  item_name: string;
-  description: string | null;
+  product_name: string;
+  product_description: string | null;
   quantity: number;
   unit_price: number;
-  subtotal: number;
+  line_total: number;
 }
 
 export interface DBQuotation {
@@ -85,13 +85,14 @@ export interface DBQuotation {
   enquiry_id: string | null;
   customer_name: string;
   customer_email: string | null;
-  customer_phone: string | null;
+  customer_phone: string;
   customer_address: string | null;
   subtotal: number;
   discount: number;
-  tax: number;
-  delivery_charge: number;
-  total: number;
+  tax_amount: number;
+  tax_rate: number;
+  delivery_charges: number;
+  total_amount: number;
   valid_until: string | null;
   terms: string | null;
   status: QuotationStatus;

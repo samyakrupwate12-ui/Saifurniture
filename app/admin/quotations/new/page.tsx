@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import { UUID_PATTERN } from "@/lib/enquiries";
 import { requireAdmin } from "@/lib/auth";
 import QuotationForm from "@/components/admin/QuotationForm";
 import { ArrowLeft } from "lucide-react";
@@ -19,11 +21,23 @@ export default async function NewQuotationPage({ searchParams }: PageProps) {
   const { supabase } = await requireAdmin();
   const resolvedParams = await searchParams;
 
-  const { data: productsData } = await supabase
+  const { data: productsData, error: productsError } = await supabase
     .from("products")
     .select("id, name, selling_price, material, dimensions")
     .eq("is_archived", false)
     .order("name");
+
+  if (productsError) throw new Error("Unable to load catalogue products. Please try again.");
+  let enquiry = null;
+  if (resolvedParams.enquiry_id) {
+    if (!UUID_PATTERN.test(resolvedParams.enquiry_id)) notFound();
+    const { data, error } = await supabase.from("enquiries")
+      .select("*, product:products(id,name,selling_price,material,dimensions)")
+      .eq("id", resolvedParams.enquiry_id).maybeSingle();
+    if (error) throw new Error("Unable to load enquiry details. Please try again.");
+    if (!data) notFound();
+    enquiry = data;
+  }
 
   const products: DBProduct[] = (productsData as DBProduct[]) || [];
 
@@ -46,10 +60,15 @@ export default async function NewQuotationPage({ searchParams }: PageProps) {
 
       <QuotationForm
         products={products}
-        defaultCustomerName={resolvedParams.customer_name || ""}
-        defaultCustomerPhone={resolvedParams.customer_phone || ""}
-        defaultCustomerEmail={resolvedParams.customer_email || ""}
-        defaultEnquiryId={resolvedParams.enquiry_id || ""}
+        defaultCustomerName={enquiry?.customer_name || resolvedParams.customer_name || ""}
+        defaultCustomerPhone={enquiry?.phone || resolvedParams.customer_phone || ""}
+        defaultCustomerEmail={enquiry?.email || resolvedParams.customer_email || ""}
+        defaultEnquiryId={enquiry?.id || ""}
+        defaultItems={enquiry?.product ? [{
+          product_id: enquiry.product.id, item_name: enquiry.product.name,
+          description: [enquiry.product.material, enquiry.product.dimensions].filter(Boolean).join(" — "),
+          quantity: enquiry.quantity, unit_price: enquiry.product.selling_price,
+        }] : undefined}
       />
     </div>
   );

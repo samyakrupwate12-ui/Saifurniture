@@ -3,7 +3,8 @@
 import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { saveQuotationAction } from "@/app/admin/admin-actions";
-import { Plus, Trash2, Printer, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { Plus, Trash2, Printer, Loader2, AlertCircle } from "lucide-react";
+import { quotationTotals } from "@/lib/quotations";
 import type { DBQuotation, DBProduct, QuotationStatus } from "@/types/supabase";
 
 interface LineItemState {
@@ -21,6 +22,7 @@ interface QuotationFormProps {
   defaultCustomerPhone?: string;
   defaultCustomerEmail?: string;
   defaultEnquiryId?: string;
+  defaultItems?: LineItemState[];
 }
 
 export default function QuotationForm({
@@ -30,7 +32,9 @@ export default function QuotationForm({
   defaultCustomerPhone = "",
   defaultCustomerEmail = "",
   defaultEnquiryId = "",
+  defaultItems,
 }: QuotationFormProps) {
+  const [printDate] = useState(() => new Date(quotation?.created_at || new Date().toISOString()).toLocaleDateString("en-IN"));
   const [state, action, pending] = useActionState(saveQuotationAction, { error: "" });
 
   const [customerName, setCustomerName] = useState(quotation?.customer_name || defaultCustomerName);
@@ -42,24 +46,24 @@ export default function QuotationForm({
   const [status, setStatus] = useState<QuotationStatus>(quotation?.status || "draft");
 
   const [discount, setDiscount] = useState<number>(quotation?.discount || 0);
-  const [deliveryCharge, setDeliveryCharge] = useState<number>(quotation?.delivery_charge || 0);
-  const [taxRate, setTaxRate] = useState<number>(quotation ? (quotation.tax > 0 ? 18 : 0) : 18);
+  const [deliveryCharge, setDeliveryCharge] = useState<number>(quotation?.delivery_charges || 0);
+  const [taxRate, setTaxRate] = useState<number>(quotation?.tax_rate ?? 0);
 
   const initialItems: LineItemState[] = quotation?.quotation_items && quotation.quotation_items.length > 0
     ? quotation.quotation_items.map((it) => ({
         product_id: it.product_id,
-        item_name: it.item_name,
-        description: it.description || "",
+        item_name: it.product_name,
+        description: it.product_description || "",
         quantity: it.quantity,
         unit_price: it.unit_price,
       }))
-    : [
+    : defaultItems ?? [
         {
           product_id: null,
-          item_name: "Handcrafted Solid Teak Dining Set",
-          description: "6-seater dining table with upholstered chairs",
+          item_name: "",
+          description: "",
           quantity: 1,
-          unit_price: 32000,
+          unit_price: 0,
         },
       ];
 
@@ -95,23 +99,19 @@ export default function QuotationForm({
     setItems(updated);
   };
 
-  const handleItemChange = (index: number, field: keyof LineItemState, value: any) => {
-    const updated = [...items];
-    (updated[index] as any)[field] = value;
-    setItems(updated);
+  const handleItemChange = <K extends keyof LineItemState,>(index: number, field: K, value: LineItemState[K]) => {
+    setItems((current) => current.map((item, i) => i === index ? { ...item, [field]: value } : item));
   };
 
-  // Live client-side calculation preview
-  const subtotal = items.reduce((sum, item) => sum + (Number(item.quantity) || 0) * (Number(item.unit_price) || 0), 0);
-  const taxableAmount = Math.max(0, subtotal - (Number(discount) || 0));
-  const calculatedTax = Math.round((taxableAmount * (Number(taxRate) || 0)) / 100);
-  const grandTotal = taxableAmount + calculatedTax + (Number(deliveryCharge) || 0);
+  // Preview uses the same two-decimal convention as the authoritative database calculation.
+  const { subtotal, tax_amount: calculatedTax, total_amount: grandTotal } = quotationTotals(items, discount, taxRate, deliveryCharge);
 
   const formatPrice = (val: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(val);
   };
 
@@ -127,12 +127,11 @@ export default function QuotationForm({
           <div>
             <h1 className="text-2xl font-bold font-serif">Sai Furniture</h1>
             <p className="text-xs text-gray-600">Sai Furniture, Furniture Market, 60 Feet Road, Ganjmal Shalimaar Nashik</p>
-            <p className="text-xs text-gray-600">Phone: +91 98765 43210 | Email: sales@saifurniture.com</p>
           </div>
           <div className="text-right">
             <h2 className="text-xl font-bold uppercase tracking-wider text-gray-800">Quotation</h2>
             <p className="text-xs font-mono font-bold mt-1">{quotation?.quotation_number || "ESTIMATE"}</p>
-            <p className="text-xs text-gray-500">Date: {new Date().toLocaleDateString("en-IN")}</p>
+            <p className="text-xs text-gray-500">Date: {printDate}</p>
           </div>
         </div>
 
@@ -261,11 +260,14 @@ export default function QuotationForm({
 
             <div>
               <label className="block text-xs font-semibold text-stone-700 mb-1">
-                Phone Number
+                Phone Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
                 name="customer_phone"
+                required
+                minLength={8}
+                maxLength={20}
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="+91 98765 43210"
@@ -396,6 +398,7 @@ export default function QuotationForm({
                       type="number"
                       name="item_unit_price[]"
                       min={0}
+                  step="0.01"
                       required
                       value={item.unit_price}
                       onChange={(e) => handleItemChange(idx, "unit_price", Number(e.target.value))}
@@ -445,7 +448,7 @@ export default function QuotationForm({
               <select
                 name="status"
                 value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
+                onChange={(e) => setStatus(e.target.value as QuotationStatus)}
                 className="w-full px-3.5 py-2 text-xs rounded-xl bg-stone-50 border border-stone-300 text-stone-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#5A3E2B]/40"
               >
                 <option value="draft">Draft</option>
@@ -485,6 +488,7 @@ export default function QuotationForm({
                   type="number"
                   name="discount"
                   min={0}
+                  step="0.01"
                   value={discount}
                   onChange={(e) => setDiscount(Number(e.target.value))}
                   className="w-full px-3 py-1.5 text-xs rounded-lg bg-stone-50 border border-stone-300 text-stone-900"
@@ -497,7 +501,8 @@ export default function QuotationForm({
                   type="number"
                   name="tax_rate"
                   min={0}
-                  max={50}
+                  step="0.01"
+                  max={100}
                   value={taxRate}
                   onChange={(e) => setTaxRate(Number(e.target.value))}
                   className="w-full px-3 py-1.5 text-xs rounded-lg bg-stone-50 border border-stone-300 text-stone-900"
@@ -510,6 +515,7 @@ export default function QuotationForm({
                   type="number"
                   name="delivery_charge"
                   min={0}
+                  step="0.01"
                   value={deliveryCharge}
                   onChange={(e) => setDeliveryCharge(Number(e.target.value))}
                   className="w-full px-3 py-1.5 text-xs rounded-lg bg-stone-50 border border-stone-300 text-stone-900"

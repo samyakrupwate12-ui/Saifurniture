@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
-import type { EnquiryStatus, QuotationStatus } from "@/types/supabase";
+import type { EnquiryStatus } from "@/types/supabase";
 
 import { MAX_PRODUCT_IMAGES, parseProductImage } from "@/lib/product-images";
+import { ENQUIRY_STATUSES, UUID_PATTERN } from "@/lib/enquiries";
+import { parseQuotationForm } from "@/lib/quotations";
 import { supabaseConfig } from "@/lib/supabase/config";
 
 // ----------------------------------------------------
@@ -170,7 +172,7 @@ export async function toggleArchiveProductAction(id: string, is_archived: boolea
 // CATEGORY ACTIONS
 // ----------------------------------------------------
 
-export async function saveCategoryAction(_prevState: any, formData: FormData) {
+export async function saveCategoryAction(_prevState: unknown, formData: FormData) {
   const { supabase } = await requireAdmin();
 
   const id = formData.get("id") ? String(formData.get("id")) : null;
@@ -236,15 +238,18 @@ export async function deleteCategoryAction(id: string) {
 
 export async function updateEnquiryStatusAction(id: string, status: EnquiryStatus, internal_notes?: string | null) {
   const { supabase } = await requireAdmin();
-  const payload: any = { status, updated_at: new Date().toISOString() };
+  if (!UUID_PATTERN.test(id) || !ENQUIRY_STATUSES.includes(status)) throw new Error("Invalid enquiry or status.");
+  if ((internal_notes?.length ?? 0) > 10000) throw new Error("Internal notes are too long.");
+  const payload: { status: EnquiryStatus; updated_at: string; internal_notes?: string | null } = { status, updated_at: new Date().toISOString() };
   if (internal_notes !== undefined) {
     payload.internal_notes = internal_notes;
   }
 
-  const { error } = await supabase.from("enquiries").update(payload).eq("id", id);
-  if (error) throw new Error(`Unable to update enquiry: ${error.message}`);
+  const { data, error } = await supabase.from("enquiries").update(payload).eq("id", id).select("id").single();
+  if (error || !data) throw new Error(`Unable to update enquiry: ${error?.message || "Enquiry not found"}`);
 
   revalidatePath("/admin/enquiries");
+  revalidatePath(`/admin/enquiries/${id}`);
   revalidatePath("/admin/dashboard");
 }
 
@@ -252,113 +257,27 @@ export async function updateEnquiryStatusAction(id: string, status: EnquiryStatu
 // QUOTATION ACTIONS
 // ----------------------------------------------------
 
-export async function saveQuotationAction(_prevState: any, formData: FormData) {
+export async function saveQuotationAction(_prevState: { error: string }, formData: FormData) {
   const { supabase } = await requireAdmin();
-
-  const id = formData.get("id") ? String(formData.get("id")) : null;
-  const customer_name = String(formData.get("customer_name") ?? "").trim();
-  const customer_email = formData.get("customer_email") ? String(formData.get("customer_email")).trim() : null;
-  const customer_phone = formData.get("customer_phone") ? String(formData.get("customer_phone")).trim() : null;
-  const customer_address = formData.get("customer_address") ? String(formData.get("customer_address")).trim() : null;
-  const enquiry_id = formData.get("enquiry_id") ? String(formData.get("enquiry_id")) : null;
-  const valid_until = formData.get("valid_until") ? String(formData.get("valid_until")) : null;
-  const terms = formData.get("terms") ? String(formData.get("terms")).trim() : null;
-  const status = (formData.get("status") as QuotationStatus) || "draft";
-
-  const discount = Math.max(0, Number(formData.get("discount") ?? 0));
-  const delivery_charge = Math.max(0, Number(formData.get("delivery_charge") ?? 0));
-  const tax_rate = Math.max(0, Number(formData.get("tax_rate") ?? 0)); // percentage, e.g. 18%
-
-  const itemNames = formData.getAll("item_name[]").map(String);
-  const itemDescriptions = formData.getAll("item_description[]").map(String);
-  const itemQuantities = formData.getAll("item_quantity[]").map(Number);
-  const itemPrices = formData.getAll("item_unit_price[]").map(Number);
-  const itemProductIds = formData.getAll("item_product_id[]").map((v) => (v ? String(v) : null));
-
-  if (!customer_name || customer_name.length < 2) {
-    return { error: "Customer name is required." };
+  let parsed: ReturnType<typeof parseQuotationForm>;
+  try {
+    parsed = parseQuotationForm(formData);
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Invalid quotation details." };
   }
 
-  if (itemNames.length === 0) {
-    return { error: "At least one line item is required for a quotation." };
-  }
-
-  // Authoritative server-side calculations
-  let subtotal = 0;
-  const quotationItems = itemNames.map((name, i) => {
-    const qty = Math.max(1, itemQuantities[i] || 1);
-    const unitPrice = Math.max(0, itemPrices[i] || 0);
-    const itemSubtotal = qty * unitPrice;
-    subtotal += itemSubtotal;
-    return {
-      product_id: itemProductIds[i] || null,
-      item_name: name.trim(),
-      description: itemDescriptions[i]?.trim() || null,
-      quantity: qty,
-      unit_price: unitPrice,
-      subtotal: itemSubtotal,
-    };
+  // The database calculates totals and saves header/items in a single transaction.
+  const { data: quotationId, error } = await supabase.rpc("save_sai_quotation", {
+    p_id: parsed.id, p_quotation: parsed.quotation, p_items: parsed.items,
   });
-
-  const taxableAmount = Math.max(0, subtotal - discount);
-  const tax = Math.round((taxableAmount * tax_rate) / 100);
-  const total = taxableAmount + tax + delivery_charge;
-
-  const quotationNumber = id
-    ? String(formData.get("quotation_number"))
-    : `QT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-  const quotationPayload = {
-    quotation_number: quotationNumber,
-    enquiry_id: enquiry_id || null,
-    customer_name,
-    customer_email,
-    customer_phone,
-    customer_address,
-    subtotal,
-    discount,
-    tax,
-    delivery_charge,
-    total,
-    valid_until,
-    terms,
-    status,
-    updated_at: new Date().toISOString(),
-  };
-
-  let quotationId = id;
-
-  if (id) {
-    const { error: qErr } = await supabase.from("quotations").update(quotationPayload).eq("id", id);
-    if (qErr) return { error: `Failed to update quotation: ${qErr.message}` };
-  } else {
-    const { data: newQ, error: qErr } = await supabase
-      .from("quotations")
-      .insert(quotationPayload)
-      .select("id")
-      .single();
-
-    if (qErr || !newQ) return { error: `Failed to create quotation: ${qErr?.message}` };
-    quotationId = newQ.id;
+  if (error || !quotationId) {
+    console.error("Quotation save failed:", error);
+    return { error: "Unable to save quotation. Check the customer and item details, then try again. No changes were saved." };
   }
-
-  // Sync quotation line items (historical snapshots)
-  if (quotationId) {
-    await supabase.from("quotation_items").delete().eq("quotation_id", quotationId);
-    const itemsToInsert = quotationItems.map((item) => ({
-      ...item,
-      quotation_id: quotationId!,
-    }));
-    await supabase.from("quotation_items").insert(itemsToInsert);
-  }
-
-  // If created from enquiry, update enquiry status to 'quoted'
-  if (enquiry_id) {
-    await supabase.from("enquiries").update({ status: "quoted" }).eq("id", enquiry_id);
-  }
-
   revalidatePath("/admin/quotations");
+  revalidatePath(`/admin/quotations/${quotationId}`);
+  revalidatePath("/admin/enquiries");
+  if (parsed.quotation.enquiry_id) revalidatePath(`/admin/enquiries/${parsed.quotation.enquiry_id}`);
   revalidatePath("/admin/dashboard");
-
-  redirect("/admin/quotations");
+  redirect(`/admin/quotations/${quotationId}`);
 }

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { Plus, Search, Eye, FileSpreadsheet, Printer } from "lucide-react";
+import { Plus, Search, Eye, FileSpreadsheet } from "lucide-react";
 import type { DBQuotation } from "@/types/supabase";
 
 export const revalidate = 0;
@@ -17,7 +17,7 @@ async function QuotationsList({ searchParams }: PageProps) {
   const { supabase } = await requireAdmin();
   const resolvedParams = await searchParams;
 
-  const searchQuery = resolvedParams.search || "";
+  const searchQuery = (resolvedParams.search || "").replace(/[,%_().\\"]/g, " ").trim().slice(0, 100);
   const statusFilter = resolvedParams.status || "all";
 
   let query = supabase
@@ -141,7 +141,7 @@ async function QuotationsList({ searchParams }: PageProps) {
                       {q.quotation_items?.length || 0} item(s)
                     </td>
                     <td className="py-3.5 px-4 font-bold text-stone-900">
-                      {formatPrice(q.total)}
+                      {formatPrice(q.total_amount)}
                     </td>
                     <td className="py-3.5 px-4">
                       <span

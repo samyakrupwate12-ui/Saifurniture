@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { updateEnquiryStatusAction } from "@/app/admin/admin-actions";
 import { Phone, Mail, FileSpreadsheet, Save, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import type { DBEnquiry } from "@/types/supabase";
+import type { DBEnquiry, EnquiryStatus } from "@/types/supabase";
 
 interface EnquiryDetailClientProps {
   enquiry: DBEnquiry;
@@ -24,8 +24,8 @@ export default function EnquiryDetailClient({ enquiry }: EnquiryDetailClientProp
     try {
       await updateEnquiryStatusAction(enquiry.id, status, internalNotes);
       setFeedback({ type: "success", text: "Enquiry status and notes saved successfully." });
-    } catch (err: any) {
-      setFeedback({ type: "error", text: err.message || "Failed to update enquiry." });
+    } catch (err) {
+      setFeedback({ type: "error", text: err instanceof Error ? err.message : "Failed to update enquiry." });
     } finally {
       setIsSubmitting(false);
     }
@@ -49,15 +49,15 @@ export default function EnquiryDetailClient({ enquiry }: EnquiryDetailClientProp
             <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200">
               <span className="text-stone-500 font-medium block text-[11px]">Contact Phone</span>
               <span className="font-bold text-stone-900 text-sm mt-0.5 flex items-center gap-1.5">
-                <Phone className="w-3.5 h-3.5 text-[#5A3E2B]" /> {enquiry.customer_phone}
+                <Phone className="w-3.5 h-3.5 text-[#5A3E2B]" /> {enquiry.phone}
               </span>
             </div>
 
-            {enquiry.customer_email && (
+            {enquiry.email && (
               <div className="bg-stone-50 p-3.5 rounded-xl border border-stone-200 col-span-2">
                 <span className="text-stone-500 font-medium block text-[11px]">Email Address</span>
                 <span className="font-bold text-stone-900 text-sm mt-0.5 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-[#5A3E2B]" /> {enquiry.customer_email}
+                  <Mail className="w-3.5 h-3.5 text-[#5A3E2B]" /> {enquiry.email}
                 </span>
               </div>
             )}
@@ -120,12 +120,13 @@ export default function EnquiryDetailClient({ enquiry }: EnquiryDetailClientProp
               <label className="block font-semibold text-stone-700 mb-1">Enquiry Status</label>
               <select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
+                onChange={(e) => setStatus(e.target.value as EnquiryStatus)}
                 className="w-full px-3.5 py-2 rounded-xl bg-stone-50 border border-stone-300 text-stone-900 font-semibold focus:outline-none focus:ring-2 focus:ring-[#5A3E2B]/40"
               >
                 <option value="new">New</option>
-                <option value="in_progress">In Progress</option>
-                <option value="quoted">Quoted</option>
+                <option value="contacted">Contacted</option>
+                <option value="quotation_sent">Quotation Sent</option>
+                <option value="converted">Converted</option>
                 <option value="closed">Closed</option>
               </select>
             </div>
@@ -161,11 +162,7 @@ export default function EnquiryDetailClient({ enquiry }: EnquiryDetailClientProp
             Pre-fill customer details and product info into a printable quotation document.
           </p>
           <Link
-            href={`/admin/quotations/new?enquiry_id=${enquiry.id}&customer_name=${encodeURIComponent(
-              enquiry.customer_name
-            )}&customer_phone=${encodeURIComponent(enquiry.customer_phone)}&customer_email=${encodeURIComponent(
-              enquiry.customer_email || ""
-            )}`}
+            href={`/admin/quotations/new?enquiry_id=${enquiry.id}`}
             className="w-full py-2.5 px-4 bg-white border border-[#5A3E2B] text-[#5A3E2B] font-semibold text-xs rounded-xl hover:bg-[#5A3E2B] hover:text-white transition-colors flex items-center justify-center gap-2"
           >
             <FileSpreadsheet className="w-4 h-4" />
