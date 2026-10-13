@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import type { DBEnquiry } from "@/types/supabase";
 import { requireAdmin } from "@/lib/auth";
 import {
   Package,
@@ -10,9 +11,9 @@ import {
   FileSpreadsheet,
   Plus,
   ArrowRight,
-  Clock,
-  UserCheck,
 } from "lucide-react";
+
+type RecentEnquiry = Pick<DBEnquiry, "id" | "customer_name" | "phone" | "status" | "created_at"> & { product: { name: string } | null };
 
 export const revalidate = 0; // Fresh metrics
 
@@ -34,10 +35,10 @@ async function Dashboard() {
     supabase.from("products").select("id", { count: "exact", head: true }).eq("stock_status", "out_of_stock").eq("is_archived", false),
     supabase.from("enquiries").select("id", { count: "exact", head: true }).eq("status", "new"),
     supabase.from("quotations").select("id", { count: "exact", head: true }).eq("status", "sent"),
-    supabase.from("enquiries").select("id, customer_name, customer_phone, status, created_at, product:products(name)").order("created_at", { ascending: false }).limit(5),
+    supabase.from("enquiries").select("id, customer_name, phone, status, created_at, product:products(name)").order("created_at", { ascending: false }).limit(5).overrideTypes<RecentEnquiry[], { merge: false }>(),
   ]);
 
-  if ([publishedRes, draftRes, archivedRes, outOfStockRes, newEnquiriesRes, sentQuotationsRes].some((r) => r.error)) {
+  if ([publishedRes, draftRes, archivedRes, outOfStockRes, newEnquiriesRes, sentQuotationsRes, recentEnquiriesRes].some((r) => r.error)) {
     throw new Error("Unable to load real dashboard metrics from database.");
   }
 
@@ -136,19 +137,19 @@ async function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
-                  {recentEnquiries.map((enq: any) => (
+                  {recentEnquiries.map((enq) => (
                     <tr key={enq.id} className="hover:bg-stone-50 transition-colors">
                       <td className="py-3 px-3 font-semibold text-stone-900">{enq.customer_name}</td>
-                      <td className="py-3 px-3">{enq.customer_phone}</td>
+                      <td className="py-3 px-3">{enq.phone}</td>
                       <td className="py-3 px-3">{enq.product?.name || "General Furniture"}</td>
                       <td className="py-3 px-3">
                         <span
                           className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${
                             enq.status === "new"
                               ? "bg-blue-100 text-blue-800"
-                              : enq.status === "in_progress"
+                              : enq.status === "contacted"
                               ? "bg-amber-100 text-amber-800"
-                              : enq.status === "quoted"
+                              : enq.status === "quotation_sent"
                               ? "bg-purple-100 text-purple-800"
                               : "bg-stone-100 text-stone-600"
                           }`}

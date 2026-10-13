@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { Search, MessageSquare, ArrowRight, Eye, Phone, Mail } from "lucide-react";
+import { Search, MessageSquare, Eye, Phone, Mail } from "lucide-react";
 import type { DBEnquiry } from "@/types/supabase";
 
 export const revalidate = 0;
@@ -17,7 +17,7 @@ async function EnquiriesList({ searchParams }: PageProps) {
   const { supabase } = await requireAdmin();
   const resolvedParams = await searchParams;
 
-  const searchQuery = resolvedParams.search || "";
+  const searchQuery = (resolvedParams.search || "").replace(/[,%_().\\"]/g, " ").trim().slice(0, 100);
   const statusFilter = resolvedParams.status || "all";
 
   let query = supabase
@@ -26,7 +26,7 @@ async function EnquiriesList({ searchParams }: PageProps) {
     .order("created_at", { ascending: false });
 
   if (searchQuery) {
-    query = query.or(`customer_name.ilike.%${searchQuery}%,customer_phone.ilike.%${searchQuery}%,customer_email.ilike.%${searchQuery}%`);
+    query = query.or(`customer_name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
   }
 
   if (statusFilter && statusFilter !== "all") {
@@ -76,9 +76,10 @@ async function EnquiriesList({ searchParams }: PageProps) {
             >
               <option value="all">All Statuses</option>
               <option value="new">New</option>
-              <option value="in_progress">In Progress</option>
-              <option value="quoted">Quoted</option>
-              <option value="closed">Closed</option>
+              <option value="contacted">Contacted</option>
+              <option value="quotation_sent">Quotation Sent</option>
+              <option value="converted">Converted</option>
+                <option value="closed">Closed</option>
             </select>
             <button
               type="submit"
@@ -114,12 +115,12 @@ async function EnquiriesList({ searchParams }: PageProps) {
                     <td className="py-3.5 px-4 space-y-0.5">
                       <div className="flex items-center gap-1.5 font-medium text-stone-800">
                         <Phone className="w-3 h-3 text-[#5A3E2B]" />
-                        <span>{enq.customer_phone}</span>
+                        <span>{enq.phone}</span>
                       </div>
-                      {enq.customer_email && (
+                      {enq.email && (
                         <div className="flex items-center gap-1.5 text-stone-500 text-[11px]">
                           <Mail className="w-3 h-3 text-stone-400" />
-                          <span>{enq.customer_email}</span>
+                          <span>{enq.email}</span>
                         </div>
                       )}
                     </td>
@@ -132,9 +133,9 @@ async function EnquiriesList({ searchParams }: PageProps) {
                         className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${
                           enq.status === "new"
                             ? "bg-blue-100 text-blue-800 border border-blue-200"
-                            : enq.status === "in_progress"
+                            : enq.status === "contacted"
                             ? "bg-amber-100 text-amber-800 border border-amber-200"
-                            : enq.status === "quoted"
+                            : enq.status === "quotation_sent"
                             ? "bg-purple-100 text-purple-800 border border-purple-200"
                             : "bg-stone-100 text-stone-600 border border-stone-200"
                         }`}

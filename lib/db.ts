@@ -1,7 +1,6 @@
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createPublicClient } from "@supabase/supabase-js";
 import { supabaseConfig } from "@/lib/supabase/config";
-import type { DBProduct, DBCategory, DBEnquiry, DBQuotation, DBQuotationItem } from "@/types/supabase";
+import type { DBProduct, DBCategory } from "@/types/supabase";
 
 // Anonymous public client for public storefront queries
 export function getAnonymousClient() {
@@ -101,49 +100,4 @@ export async function fetchPublicCategories() {
 
   if (error) return [] as DBCategory[];
   return (data as DBCategory[]) || [];
-}
-
-// Public Enquiry submission (rate limited & validated)
-export async function submitCustomerEnquiryPayload(payload: {
-  customer_name: string;
-  customer_phone: string;
-  customer_email?: string | null;
-  product_id?: string | null;
-  quantity?: number;
-  message?: string | null;
-}) {
-  const supabase = getAnonymousClient();
-
-  const cleanName = payload.customer_name.trim();
-  const cleanPhone = payload.customer_phone.trim();
-  const cleanEmail = payload.customer_email?.trim() || null;
-  const cleanMessage = payload.message?.trim() || null;
-
-  if (!cleanName || cleanName.length < 2) {
-    return { success: false, error: "Please enter your full name." };
-  }
-  if (!cleanPhone || cleanPhone.length < 8) {
-    return { success: false, error: "Please enter a valid contact phone number." };
-  }
-
-  const { data, error } = await supabase
-    .from("enquiries")
-    .insert({
-      customer_name: cleanName,
-      customer_phone: cleanPhone,
-      customer_email: cleanEmail,
-      product_id: payload.product_id || null,
-      quantity: Math.max(1, payload.quantity || 1),
-      message: cleanMessage,
-      status: "new",
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    console.error("Enquiry submission error:", error);
-    return { success: false, error: "Unable to submit enquiry right now. Please try again." };
-  }
-
-  return { success: true, enquiryId: data.id };
 }

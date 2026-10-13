@@ -15,7 +15,7 @@ export default async function EditQuotationPage({ params }: PageProps) {
   const { id } = await params;
   const { supabase } = await requireAdmin();
 
-  const [{ data: quotationData }, { data: productsData }] = await Promise.all([
+  const [{ data: quotationData, error: quotationError }, { data: productsData, error: productsError }] = await Promise.all([
     supabase
       .from("quotations")
       .select("*, quotation_items(*)")
@@ -23,6 +23,8 @@ export default async function EditQuotationPage({ params }: PageProps) {
       .maybeSingle(),
     supabase.from("products").select("id, name, selling_price, material, dimensions").eq("is_archived", false).order("name"),
   ]);
+
+  if (quotationError || productsError) throw new Error("Unable to load quotation details. Please try again.");
 
   if (!quotationData) {
     notFound();

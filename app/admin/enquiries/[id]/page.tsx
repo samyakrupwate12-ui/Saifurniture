@@ -21,7 +21,9 @@ export default async function EnquiryDetailPage({ params }: PageProps) {
     .eq("id", id)
     .maybeSingle();
 
-  if (error || !data) {
+  if (error) throw new Error("Unable to load enquiry details. Please try again.");
+
+  if (!data) {
     notFound();
   }
 
