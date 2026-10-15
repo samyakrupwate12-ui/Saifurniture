@@ -118,7 +118,7 @@ export default function Footer() {
               </div>
               <div>
                 <a
-                  href="https://www.google.com/maps/search/?api=1&query=Sai+Furniture%2C+Furniture+Market%2C+60+Feet+Road%2C+Ganjmal+Shalimaar+Nashik"
+                  href="https://maps.app.goo.gl/xeeTgWJWZSEiD1GG8"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs text-[#D4A373] hover:text-[#E8BE95] font-medium transition-colors"

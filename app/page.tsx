@@ -268,7 +268,7 @@ export default async function HomePage() {
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <a
-                    href="https://www.google.com/maps/search/?api=1&query=Sai+Furniture%2C+Furniture+Market%2C+60+Feet+Road%2C+Ganjmal+Shalimaar+Nashik"
+                    href="https://maps.app.goo.gl/xeeTgWJWZSEiD1GG8"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#5A3E2B] text-white font-semibold text-xs sm:text-sm hover:bg-[#432D1F] transition-all shadow-xs"
@@ -291,7 +291,7 @@ export default async function HomePage() {
               <div className="rounded-3xl overflow-hidden border border-[#E6DFD5] shadow-lg bg-stone-100 aspect-4/3 relative">
                 <iframe
                   title="Sai Furniture Showroom Location"
-                  src="https://maps.google.com/maps?q=Sai+Furniture%2C+Furniture+Market%2C+60+Feet+Road%2C+Ganjmal+Shalimaar+Nashik&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                  src="https://maps.google.com/maps?q=19.9982895,73.7868952&z=17&output=embed"
                   className="w-full h-full border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"

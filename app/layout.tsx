@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import WhatsAppButton from "@/components/layout/WhatsAppButton";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -37,7 +39,7 @@ const storeJsonLd = {
     "addressRegion": "Maharashtra",
     "addressCountry": "IN",
   },
-  "hasMap": "https://www.google.com/maps/search/?api=1&query=Sai+Furniture%2C+Furniture+Market%2C+60+Feet+Road%2C+Ganjmal+Shalimaar+Nashik",
+  "hasMap": "https://maps.app.goo.gl/xeeTgWJWZSEiD1GG8",
   "telephone": "+91 98765 43210",
   "email": "support@saifurniture.com",
 };
@@ -63,6 +65,7 @@ export default function RootLayout({
           <Navbar />
           <div className="flex-1">{children}</div>
           <Footer />
+          <Suspense fallback={null}><WhatsAppButton /></Suspense>
         </CartProvider>
       </body>
     </html>
