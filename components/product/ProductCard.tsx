@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MessageSquareText, ShieldCheck } from "lucide-react";
+import { MessageSquareText, ZoomIn } from "lucide-react";
+import ProductImageViewer from "./ProductImageViewer";
 import type { DBProduct } from "@/types/supabase";
 
 interface ProductCardProps {
@@ -15,6 +16,7 @@ export default function ProductCard({
   product,
   priorityImage = false,
 }: ProductCardProps) {
+  const [viewerOpen, setViewerOpen] = useState(false);
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -47,16 +49,17 @@ export default function ProductCard({
     <div className="group bg-white rounded-2xl border border-[#E6DFD5] overflow-hidden shadow-2xs hover:shadow-md transition-all duration-300 flex flex-col h-full">
       {/* Product Image */}
       <div className="relative aspect-4/3 w-full bg-[#F3EEE6] overflow-hidden">
-        <Link href={`/products/${product.slug}`} className="block w-full h-full">
+        <button type="button" onClick={() => setViewerOpen(true)} aria-label={`Enlarge image of ${product.name}`} className="relative block w-full h-full cursor-zoom-in">
           <Image
             src={firstImage}
             alt={product.name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             priority={priorityImage}
-            className="object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+            className="object-contain object-center"
           />
-        </Link>
+          <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-white/95 px-2 py-1 text-xs text-stone-800"><ZoomIn size={14} /> Enlarge</span>
+        </button>
 
         {/* Discount Badge */}
         {discountPercent > 0 && (
@@ -70,6 +73,8 @@ export default function ProductCard({
           {stockBadgeLabel}
         </div>
       </div>
+
+      {viewerOpen && <ProductImageViewer src={firstImage} productName={product.name} onClose={() => setViewerOpen(false)} />}
 
       {/* Product Details Content */}
       <div className="p-5 flex flex-col flex-1 justify-between bg-white space-y-4">

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import ProductImageViewer from "./ProductImageViewer";
 import type { DBProductImage } from "@/types/supabase";
 
 interface ProductGalleryProps {
@@ -15,27 +16,33 @@ export default function ProductGallery({ images, productName }: ProductGalleryPr
     ? images.map((img) => img.image_url)
     : [fallbackImage];
 
+  const [viewerOpen, setViewerOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(imageList[0]);
 
   return (
     <div className="space-y-4">
       {/* Main Preview */}
-      <div className="relative aspect-4/3 w-full bg-[#F3EEE6] rounded-2xl overflow-hidden border border-[#E6DFD5] shadow-xs">
+      <button type="button" onClick={() => setViewerOpen(true)} aria-label={`Enlarge image of ${productName}`} className="block cursor-zoom-in relative aspect-4/3 w-full bg-[#F3EEE6] rounded-2xl overflow-hidden border border-[#E6DFD5] shadow-xs">
         <Image
           src={activeImage}
           alt={productName}
           fill
           priority
           sizes="(max-width: 1024px) 100vw, 50vw"
-          className="object-cover object-center"
+          className="object-contain object-center"
         />
-      </div>
+        <span className="absolute bottom-3 right-3 rounded-lg bg-white/95 px-3 py-2 text-sm">Click to enlarge</span>
+      </button>
+      {viewerOpen && <ProductImageViewer src={activeImage} productName={productName} onClose={() => setViewerOpen(false)} />}
 
       {/* Thumbnails */}
       {imageList.length > 1 && (
         <div className="flex items-center gap-3 overflow-x-auto pb-2">
           {imageList.map((imgUrl, idx) => (
             <button
+              type="button"
+              aria-label={`View ${productName} image ${idx + 1}`}
+              aria-pressed={activeImage === imgUrl}
               key={idx}
               onClick={() => setActiveImage(imgUrl)}
               className={`relative w-20 aspect-4/3 rounded-xl overflow-hidden border transition-all shrink-0 ${
@@ -49,7 +56,7 @@ export default function ProductGallery({ images, productName }: ProductGalleryPr
                 alt={`${productName} thumbnail ${idx + 1}`}
                 fill
                 sizes="80px"
-                className="object-cover"
+                className="object-contain"
               />
             </button>
           ))}
