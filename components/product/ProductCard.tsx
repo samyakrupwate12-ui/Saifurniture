@@ -88,6 +88,7 @@ export default function ProductCard({
 
           {/* Title */}
           <Link
+            prefetch={true}
             href={`/products/${product.slug}`}
             className="font-serif text-lg font-bold text-[#2C221E] hover:text-[#5A3E2B] transition-colors line-clamp-1 block"
           >
@@ -116,6 +117,7 @@ export default function ProductCard({
           </div>
 
           <Link
+            prefetch={true}
             href={`/products/${product.slug}`}
             className="w-full py-2.5 px-3 rounded-xl bg-[#5A3E2B] text-white hover:bg-[#432D1F] font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs"
           >

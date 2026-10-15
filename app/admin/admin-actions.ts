@@ -151,6 +151,7 @@ export async function togglePublishProductAction(id: string, is_published: boole
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/products/[slug]", "page");
   revalidatePath("/");
 }
 
@@ -165,6 +166,7 @@ export async function toggleArchiveProductAction(id: string, is_archived: boolea
 
   revalidatePath("/admin/products");
   revalidatePath("/products");
+  revalidatePath("/products/[slug]", "page");
   revalidatePath("/");
 }
 
@@ -206,6 +208,7 @@ export async function saveCategoryAction(_prevState: unknown, formData: FormData
 
   revalidatePath("/admin/categories");
   revalidatePath("/products");
+  revalidatePath("/products/[slug]", "page");
   return { success: true };
 }
 
@@ -229,6 +232,7 @@ export async function deleteCategoryAction(id: string) {
 
   revalidatePath("/admin/categories");
   revalidatePath("/products");
+  revalidatePath("/products/[slug]", "page");
   return { success: true };
 }
 
