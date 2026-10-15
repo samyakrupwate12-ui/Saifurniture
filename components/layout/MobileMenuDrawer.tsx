@@ -138,7 +138,7 @@ export default function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerPr
             <span>support@saifurniture.com</span>
           </div>
           <a
-            href="https://www.google.com/maps/search/?api=1&query=Sai+Furniture%2C+Furniture+Market%2C+60+Feet+Road%2C+Ganjmal+Shalimaar+Nashik"
+            href="https://maps.app.goo.gl/xeeTgWJWZSEiD1GG8"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-start gap-2 hover:text-[#5A3E2B] transition-colors pt-1"
