@@ -40,8 +40,6 @@ const storeJsonLd = {
     "addressCountry": "IN",
   },
   "hasMap": "https://maps.app.goo.gl/xeeTgWJWZSEiD1GG8",
-  "telephone": "+91 98765 43210",
-  "email": "support@saifurniture.com",
 };
 
 export default function RootLayout({

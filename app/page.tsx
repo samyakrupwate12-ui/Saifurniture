@@ -9,8 +9,6 @@ import {
   MessageSquareText,
   MapPin,
   ExternalLink,
-  Phone,
-  Mail,
   Sofa,
   Bed,
   Utensils,
@@ -254,16 +252,7 @@ export default async function HomePage() {
                     </div>
                   </div>
 
-                  <div className="pt-2 flex flex-wrap gap-4 text-xs text-stone-600 border-t border-[#E6DFD5]">
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5 text-[#5A3E2B]" />
-                      <span>+91 98765 43210</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5 text-[#5A3E2B]" />
-                      <span>support@saifurniture.com</span>
-                    </div>
-                  </div>
+
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">

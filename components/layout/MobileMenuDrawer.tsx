@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { X, ChevronRight, Phone, MapPin, Mail, Sofa, Bed, Utensils, Armchair, Archive, Tv } from "lucide-react";
+import { X, ChevronRight, MapPin, Sofa, Bed, Utensils, Armchair, Archive, Tv } from "lucide-react";
 import { CATEGORIES } from "@/data/products";
 
 interface MobileMenuDrawerProps {
@@ -129,14 +129,6 @@ export default function MobileMenuDrawer({ isOpen, onClose }: MobileMenuDrawerPr
 
         {/* Bottom Support Info */}
         <div className="p-4 bg-[#F3EEE6] border-t border-[#E6DFD5] text-xs text-stone-600 space-y-2">
-          <div className="flex items-center gap-2">
-            <Phone className="w-3.5 h-3.5 text-[#5A3E2B]" />
-            <span>Support: +91 98765 43210</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Mail className="w-3.5 h-3.5 text-[#5A3E2B]" />
-            <span>support@saifurniture.com</span>
-          </div>
           <a
             href="https://maps.app.goo.gl/xeeTgWJWZSEiD1GG8"
             target="_blank"
