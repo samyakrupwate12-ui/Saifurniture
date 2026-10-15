@@ -3,9 +3,14 @@ import { notFound } from "next/navigation";
 import { fetchPublicProductBySlug } from "@/lib/db";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductEnquiryForm from "@/components/product/ProductEnquiryForm";
-import { ShieldCheck, Truck, Sparkles, SlidersHorizontal, ArrowLeft } from "lucide-react";
+import { ShieldCheck, Truck, ArrowLeft } from "lucide-react";
 
-export const revalidate = 0; // Fresh product details
+// Cache public product pages briefly; admin mutations invalidate them immediately.
+export const revalidate = 60;
+
+export function generateStaticParams() {
+  return []; // Generate and cache each product on its first visit.
+}
 
 interface PageProps {
   params: Promise<{ slug: string }>;

@@ -85,7 +85,9 @@ export async function fetchPublicProductBySlug(slug: string) {
     .eq("is_archived", false)
     .maybeSingle();
 
-  if (error || !data) return null;
+  // A temporary backend failure must not become a cached product-not-found page.
+  if (error) throw new Error("Unable to load product details. Please try again.");
+  if (!data) return null;
   return data as DBProduct;
 }
 
